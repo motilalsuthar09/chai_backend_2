@@ -1,40 +1,44 @@
 import dotenv from 'dotenv';
-dotenv.config({path:'./env'})
+dotenv.config({ path: './env' })
 
 import mongo_connection from "/coding/Backend/chaiaurbackend/src/db/connection.js"
 import express from 'express';
 import mongoose from 'mongoose'
 import { db_name } from './constants.js';
-const app=express();
+const app = express();
 
 mongo_connection().then((result) => {
-    app.listen(process.env.PORT || 4000,()=>{
-        console.log('connection successfully esatabilished...',result);
-        
+    app.listen(process.env.PORT || 4000, () => {
+        console.log('connection successfully esatabilished...', result);
+
     });
-    app.on("error",(err)=>{
-        console.log('error while estabilishing connection ',err);
+    app.on("error", (err) => {
+        console.log('error while estabilishing connection ', err);
         throw err;
     })
 }).catch((err) => {
     console.log('mongodb connection failed.... ');
-    
+
 });
-app.get("/",(req,res)=>{
-res.send("page is saying hello....");
+
+const requestTime1 = function (req, res, next) {
+  const varr=req.requestTime = Date.now()
+ 
+  console.log(varr,"var");
+   next();
+}
+
+app.use(requestTime1)
+
+app.get('/', (req, res) => {
+  let responseText = 'Hello World!<br>'
+  responseText += `<small>Requested at: ${req.requestTime}</small>`
+  res.send(responseText)
 })
 
-
-
-
-
-
-
-
-
-
-
-
+app.get("/", (req, res) => {
+    res.send("page is saying hello....");
+})
 
 /*
 ;(async()=>{
