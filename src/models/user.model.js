@@ -72,4 +72,4 @@ userSchema.methods.generateRefreshToken = async function () {
         expiresIn: process.env.RTE
     })
 }
-export const User = mongoose.model("User", userSchema)  
+export const User = mongoose.model("User", userSchema)
