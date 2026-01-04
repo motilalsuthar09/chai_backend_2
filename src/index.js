@@ -3,13 +3,13 @@ dotenv.config({ path: './env' })
 
 import mongo_connection from "/coding/Backend/chaiaurbackend/src/db/connection.js"
 import express from 'express';
-import mongoose from 'mongoose'
-import { db_name } from './constants.js';
-const app = express();
+// import mongoose from 'mongoose';
+import app from './app.js';
+// const app = express();
 
 mongo_connection().then((result) => {
     app.listen(process.env.PORT || 4000, () => {
-        console.log('connection successfully esatabilished...', result);
+        console.log('connection successfully esatabilished...', result, process.env.PORT);
 
     });
     app.on("error", (err) => {
@@ -34,10 +34,6 @@ app.get('/', (req, res) => {
   let responseText = 'Hello World!<br>'
   responseText += `<small>Requested at: ${req.requestTime}</small>`
   res.send(responseText)
-})
-
-app.get("/", (req, res) => {
-    res.send("page is saying hello....");
 })
 
 /*
