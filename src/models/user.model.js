@@ -1,8 +1,11 @@
-import mongoose from 'mongoose'
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
-        require: true,
+        required: true,
         unique: true,
         lowercase: true,
         trim: true,
@@ -10,51 +13,50 @@ const userSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        require: true,
+        required: true,
         unique: true,
         lowercase: true,
         trim: true
     },
     fullname: {
         type: String,
-        require: true,
+        required: true,
         trim: true,
         index: true
     },
     avatar: {
         type: String,
-        require: true,
+        required: true,
     },
     coverImage: {
-        type: string
+        type: String
     },
     watchHistory: [{
-        type: Schema.Types.ObjectId,
-        ref: "Video"
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"Video"
     }],
     password: {
-        type: string,
+        type: String,
         required: [true, "password is required"]
     },
     refreshToken: {
-        type: string
+        type: String
     }
 }, { timestamps: true })
 
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function() {
     if (!this.isModified("password")) {
-        return next()
+        return;
     }
     this.password = await bcrypt.hash(this.password, 10)
-    next()
 })
 
 userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password)
 }
 
-userSchema.methods.generateAccessToken = async function () {
-    return await jwt.sign({
+userSchema.methods.generateAccessToken = function () {
+    return jwt.sign({
         _id: this._id,
         email: this.email,
         username: this.username,
@@ -65,8 +67,8 @@ userSchema.methods.generateAccessToken = async function () {
 }
 
 
-userSchema.methods.generateRefreshToken = async function () {
-    return await jwt.sign({
+userSchema.methods.generateRefreshToken = function () {
+    return jwt.sign({
         _id: this._id,
     }, process.env.RTS, {
         expiresIn: process.env.RTE

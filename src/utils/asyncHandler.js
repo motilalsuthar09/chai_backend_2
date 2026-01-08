@@ -12,14 +12,14 @@
 // const asyncHandler =(fn)=> async()=>{}
 
 // try-catch method:-
-const asyncHandler = (fn) => async (req, res, next) => {
+const asyncHandler = (fn) =>  async (req, res, next) => {
     try {
-       return await fn(req, res, next)
+        return await fn(req, res, next)
     } catch (error) {
         res.status(error.code || 500).json({
             success: false,
-            message: error.message
-        })
+            message: error.message || "internal server error"
+        });
     }
 }
 
