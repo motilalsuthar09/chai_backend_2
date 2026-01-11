@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { loginUser , LogoutUser, registerUser } from "../controllers/user.controllers.js";
+import { loginUser , LogoutUser, refreshAccessToken, registerUser } from "../controllers/user.controllers.js";
 import { upload } from "../middlewares/multer.middleware.js"
 const router = Router()
 import { body, validationResult } from "express-validator";
-import{ verifyJWT } from "../middlewares/auth.middleware.js"
+import verifyJWT  from "../middlewares/auth.middleware.js";
+
 
 const validator=[
     body('username').notEmpty().trim().withMessage("Username required").isLength({ min: 3, max: 20 }).withMessage("Username must be 3–20 chars"),
@@ -36,5 +37,6 @@ router.route("/login").post(loginUser)
 
 //secured Routes
 router.route("/logout").post(verifyJWT, LogoutUser)
+router.route("/refresh-token").post(refreshAccessToken)
 
 export default router

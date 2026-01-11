@@ -5,7 +5,7 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import { ApiResponse } from '../utils/ApiResponce.js';
 import { trusted } from 'mongoose';
 import { response } from 'express';
-
+import jwt from "jsonwebtoken"
 
 const generateAccessAndRefreshTokens = async (userId)=>{
   try {
@@ -125,7 +125,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const { email, username, password } = req.body
 
-  if (!username || !email) {
+  if (!username && !email) {
     throw new ApiError(400, "username or password required")
   }
 
@@ -188,7 +188,7 @@ const LogoutUser = asyncHandler(async(req,res)=>{
   )
 
   const options={
-    httpsOnly: true,
+    httpOnly: true,
     secure: true
   }
 
@@ -198,5 +198,47 @@ const LogoutUser = asyncHandler(async(req,res)=>{
   .json(new ApiResponse(response, {}, "User Logged Out"))
 })
 
+const refreshAccessToken= asyncHandler(async (req,res)=>{
+ const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
-export { registerUser, loginUser ,LogoutUser};
+ if (!incomingRefreshToken) {
+  throw new ApiError(401,"Unathorized Request");
+ }
+
+ try {
+  const decodedToken=jwt.verify(incomingRefreshToken,process.env.RTS)
+ 
+  const user =User.findById(decodedToken?._id)
+ 
+  if (!user) {
+   throw new ApiError(401,"Invalid Refresh Token");
+  }
+ 
+  if(incomingRefreshToken !== user?.refreshToken){
+   throw new ApiError(401,"Refresh token is expired or used")
+  }
+ 
+  const options={
+   httpOnly:true,
+   secure: true
+  }
+ 
+  const {AccessToken,newRefreshToken} =await generateAccessAndRefreshTokens(user._id)
+ 
+ 
+  return res
+  .status(200)
+  .cookie("accessToken", AccessToken ,options)
+  .cookie("refreshToken", newRefreshToken,options)
+  .json(
+   new ApiResponse(200,
+     {AccessToken ,newRefreshToken },
+     "AccessToken Refreshed Successfully"
+   )
+  )
+ } catch (error) {
+  throw new ApiError(401,error?.message || "Invalid Refresh Token")
+ }
+})
+
+export { registerUser, loginUser ,LogoutUser ,refreshAccessToken};
