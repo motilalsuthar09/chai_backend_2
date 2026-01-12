@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import { asyncHandler } from "../utils/asyncHandler";
+import { User } from "./user.model";
 
 const subscriptionSchema = new mongoose.Schema(
     {
