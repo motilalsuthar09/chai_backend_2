@@ -6,7 +6,7 @@ import { ApiResponse } from '../utils/ApiResponce.js';
 import { trusted } from 'mongoose';
 import { response } from 'express';
 import jwt from "jsonwebtoken"
-
+import fs from 'fs'
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId)
@@ -151,8 +151,8 @@ const loginUser = asyncHandler(async (req, res) => {
 
   // tpye-2
   const loggedInUser = user.toObject()
-  delete user.password
-  delete user.refreshToken
+  delete loggedInUser.password
+  delete loggedInUser.refreshToken
 
   const options = {
     httpOnly: true,
@@ -193,9 +193,9 @@ const LogoutUser = asyncHandler(async (req, res) => {
   }
 
   return res.status(200)
-    .clearCookie("accesssToken", options)
+    .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
-    .json(new ApiResponse(response, {}, "User Logged Out"))
+    .json(new ApiResponse(200, {}, "User Logged Out"))
 })
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -208,7 +208,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   try {
     const decodedToken = jwt.verify(incomingRefreshToken, process.env.RTS)
 
-    const user = User.findById(decodedToken?._id)
+    const user = await User.findById(decodedToken?._id)
 
     if (!user) {
       throw new ApiError(401, "Invalid Refresh Token");
@@ -223,16 +223,16 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       secure: true
     }
 
-    const { AccessToken, newRefreshToken } = await generateAccessAndRefreshTokens(user._id)
+    const { AccessToken, RefreshToken } = await generateAccessAndRefreshTokens(user._id)
 
 
     return res
       .status(200)
       .cookie("accessToken", AccessToken, options)
-      .cookie("refreshToken", newRefreshToken, options)
+      .cookie("refreshToken", RefreshToken, options)
       .json(
         new ApiResponse(200,
-          { AccessToken, newRefreshToken },
+          { AccessToken, RefreshToken },
           "AccessToken Refreshed Successfully"
         )
       )
@@ -261,7 +261,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 })
 
 const getCurrentUser = asyncHandler(async (req, res) => {
-  return res.status(200).json(20, req.user, "current user fetched successfully")
+  return res.status(200).json(200, req.user, "current user fetched successfully")
 })
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -270,7 +270,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     throw new ApiError(400, "all fields are required")
   }
 
-  const user =await User.findByIdAndUpdate(req.user?._id,
+  const user = await User.findByIdAndUpdate(req.user?._id,
     {
       $set: {
         fullname,
@@ -291,14 +291,17 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "avatar file is missing")
   }
 
+  //delete old image 
+
+  fs.unlinkSync(avatarLocalPath)
+
   const avatar = await uploadOnCloudinary(avatarLocalPath)
 
-
-  if (!avatarLocalPath) {
+  if (!avatar) {
     throw new ApiError(400, "Error while uploading on avatar")
   }
 
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: {
@@ -321,7 +324,9 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "coverimage file is missing")
   }
 
-  const  coverImage = await uploadOnCloudinary(coverImageLocalPath)
+  fs.unlinkSync(avatarLocalPath)
+
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
   if (!coverImage) {
     throw new ApiError(400, "Error while uploading on  coverImage")
@@ -331,7 +336,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     req.user._id,
     {
       $set: {
-         coverImage:  coverImage.url
+        coverImage: coverImage.url
       }
     },
     {
@@ -346,8 +351,8 @@ export {
   registerUser,
   loginUser,
   LogoutUser,
-  refreshAccessToken, 
-  
+  refreshAccessToken,
+
   changeCurrentPassword,
   getCurrentUser,
   updateAccountDetails,
